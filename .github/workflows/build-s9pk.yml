@@ -32,7 +32,9 @@ jobs:
           sudo chmod +x /usr/local/bin/yq
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.77.0"
 
       - name: Build and install start-sdk
         run: |
