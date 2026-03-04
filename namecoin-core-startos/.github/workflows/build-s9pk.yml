@@ -6,6 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+defaults:
+  run:
+    working-directory: namecoin-core-startos
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,7 +23,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Set up QEMU
-        uses: docker/actions/setup-qemu@v3
+        uses: docker/setup-qemu-action@v3
         if: matrix.platform == 'aarch64'
 
       - name: Install yq
