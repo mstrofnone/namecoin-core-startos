@@ -39,8 +39,9 @@ jobs:
           git clone --depth 1 --branch v0.3.5.1 https://github.com/Start9Labs/start-os.git /tmp/start-os
           cd /tmp/start-os/core
           cargo build --release --bin startbox 2>&1 | tail -20
-          ln -sf "$(pwd)/target/release/startbox" /usr/local/bin/start-sdk
-          start-sdk --version || echo "start-sdk built but --version not supported"
+          cp target/release/startbox /usr/local/bin/start-sdk
+          chmod +x /usr/local/bin/start-sdk
+          which start-sdk && echo "start-sdk installed" || echo "FAILED"
         timeout-minutes: 30
 
       - name: Extract version
