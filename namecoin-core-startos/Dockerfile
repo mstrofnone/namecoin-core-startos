@@ -5,9 +5,7 @@ ARG NAMECOIN_VERSION=nc30.2
 ARG TARGETARCH
 
 RUN apt-get update && apt-get install -y \
-    automake \
-    autotools-dev \
-    bsdmainutils \
+    autoconf \
     build-essential \
     ca-certificates \
     cmake \
@@ -15,17 +13,11 @@ RUN apt-get update && apt-get install -y \
     git \
     libevent-dev \
     libboost-dev \
-    libboost-filesystem-dev \
-    libboost-system-dev \
-    libboost-thread-dev \
     libdb5.3++-dev \
-    libminiupnpc-dev \
-    libnatpmp-dev \
     libsqlite3-dev \
-    libssl-dev \
-    libtool \
     libzmq3-dev \
     pkg-config \
+    pkgconf \
     python3 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -36,22 +28,21 @@ RUN git clone --depth 1 --branch ${NAMECOIN_VERSION} https://github.com/namecoin
 
 WORKDIR /build/namecoin-core
 
-# Build Namecoin Core
-RUN ./autogen.sh
+# Build Namecoin Core using CMake (nc30.x dropped autotools)
+RUN cmake -B build \
+    -DBUILD_GUI=OFF \
+    -DBUILD_TESTS=OFF \
+    -DBUILD_BENCH=OFF \
+    -DENABLE_IPC=OFF \
+    -DWITH_ZMQ=ON \
+    -DCMAKE_BUILD_TYPE=Release
 
-RUN ./configure \
-    --disable-tests \
-    --disable-bench \
-    --disable-gui \
-    --with-daemon \
-    --with-utils \
-    --without-miniupnpc \
-    --enable-suppress-external-warnings \
-    --prefix=/usr/local \
-    CXXFLAGS="-O2"
+RUN cmake --build build -j$(nproc)
 
-RUN make -j$(nproc)
-RUN make install DESTDIR=/output
+# Copy binaries manually (cmake --install fails due to upstream man page bug #565)
+RUN mkdir -p /output/usr/local/bin && \
+    find build/src -maxdepth 1 -type f \( -name 'namecoind' -o -name 'namecoin-cli' -o -name 'namecoin-tx' -o -name 'namecoin-wallet' -o -name 'bitcoin' \) -executable -exec cp {} /output/usr/local/bin/ \; && \
+    ls -la /output/usr/local/bin/
 
 # Stage 2: Runtime image
 FROM debian:bookworm-slim
@@ -65,16 +56,20 @@ RUN apt-get update && apt-get install -y \
     libdb5.3++ \
     libsqlite3-0 \
     libzmq5 \
-    libminiupnpc17 \
-    libnatpmp1 \
     tini \
     jq \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy built binaries
-COPY --from=builder /output/usr/local/bin/namecoind /usr/local/bin/
-COPY --from=builder /output/usr/local/bin/namecoin-cli /usr/local/bin/
-COPY --from=builder /output/usr/local/bin/namecoin-tx /usr/local/bin/
+COPY --from=builder /output/usr/local/bin/ /usr/local/bin/
+
+# Ensure namecoin-prefixed binaries exist (upstream bug #565: 'bitcoin' not rebranded)
+RUN if [ ! -f /usr/local/bin/namecoind ] && [ -f /usr/local/bin/bitcoin ]; then \
+      ln -sf bitcoin /usr/local/bin/namecoind; \
+    fi && \
+    if [ ! -f /usr/local/bin/namecoin-cli ] && [ -f /usr/local/bin/bitcoin-cli ]; then \
+      ln -sf bitcoin-cli /usr/local/bin/namecoin-cli; \
+    fi
 
 # Copy wrapper scripts
 COPY docker_entrypoint.sh /usr/local/bin/
