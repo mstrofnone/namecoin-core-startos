@@ -31,12 +31,17 @@ jobs:
           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
 
-      - name: Install start-sdk
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build and install start-sdk
         run: |
-          # Install start-sdk from StartOS
-          curl -fsSL https://install.start9.com/start-sdk | bash
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-        continue-on-error: true
+          git clone --depth 1 --branch v0.3.5.1 https://github.com/Start9Labs/start-os.git /tmp/start-os
+          cd /tmp/start-os/core
+          cargo build --release --bin startbox 2>&1 | tail -20
+          ln -sf "$(pwd)/target/release/startbox" /usr/local/bin/start-sdk
+          start-sdk --version || echo "start-sdk built but --version not supported"
+        timeout-minutes: 30
 
       - name: Extract version
         id: version
