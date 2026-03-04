@@ -31,20 +31,29 @@ jobs:
           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: "1.77.0"
-
-      - name: Build and install start-sdk
+      - name: Extract start-sdk from StartOS ISO
         run: |
-          git clone --recursive --depth 1 --branch v0.3.5.1 https://github.com/Start9Labs/start-os.git /tmp/start-os
-          cd /tmp/start-os/core
-          cargo build --release --bin startbox 2>&1 | tail -20
-          cp target/release/startbox /usr/local/bin/start-sdk
-          chmod +x /usr/local/bin/start-sdk
-          which start-sdk && echo "start-sdk installed" || echo "FAILED"
-        timeout-minutes: 30
+          # Download the x86_64 ISO and extract startbox/start-sdk
+          curl -fsSL -o /tmp/startos.iso "https://github.com/Start9Labs/start-os/releases/download/v0.3.5.1/startos-0.3.5.1-39de098_x86_64.iso"
+          mkdir -p /tmp/iso
+          sudo mount -o loop /tmp/startos.iso /tmp/iso || sudo mount -o loop,ro /tmp/startos.iso /tmp/iso
+          # startbox is typically in /usr/bin or /usr/local/bin on the ISO's squashfs
+          SQFS=$(find /tmp/iso -name '*.squashfs' -o -name 'filesystem.squashfs' 2>/dev/null | head -1)
+          if [ -n "$SQFS" ]; then
+            sudo apt-get install -y squashfs-tools
+            mkdir -p /tmp/sqfs
+            sudo unsquashfs -d /tmp/sqfs "$SQFS"
+            find /tmp/sqfs -name 'startbox' -o -name 'start-sdk' 2>/dev/null | head -5
+            STARTBOX=$(find /tmp/sqfs -name 'startbox' -type f | head -1)
+            if [ -n "$STARTBOX" ]; then
+              sudo cp "$STARTBOX" /usr/local/bin/start-sdk
+              sudo chmod +x /usr/local/bin/start-sdk
+            fi
+          fi
+          # Alternative: check live filesystem directly
+          find /tmp/iso -name 'startbox' -o -name 'start-sdk' 2>/dev/null | head -5
+          which start-sdk && echo "start-sdk ready" || echo "start-sdk not found"
+          sudo umount /tmp/iso 2>/dev/null || true
 
       - name: Extract version
         id: version
