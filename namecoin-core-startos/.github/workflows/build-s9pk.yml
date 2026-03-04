@@ -75,15 +75,15 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: docker-image-${{ matrix.platform }}
-          path: docker-images/${{ matrix.platform }}.tar
+          path: namecoin-core-startos/docker-images/${{ matrix.platform }}.tar
           retention-days: 7
 
       - name: Upload s9pk artifact
         uses: actions/upload-artifact@v4
-        if: hashFiles('*.s9pk') != ''
+        if: hashFiles('namecoin-core-startos/*.s9pk') != ''
         with:
           name: namecoind-s9pk
-          path: "*.s9pk"
+          path: "namecoin-core-startos/*.s9pk"
           retention-days: 30
 
       - name: Smoke test - verify binary works

@@ -40,8 +40,9 @@ RUN cmake -B build \
 RUN cmake --build build -j$(nproc)
 
 # Copy binaries manually (cmake --install fails due to upstream man page bug #565)
+# Binaries land in build/bin/ (not build/src/) with CMake
 RUN mkdir -p /output/usr/local/bin && \
-    find build/src -maxdepth 1 -type f \( -name 'namecoind' -o -name 'namecoin-cli' -o -name 'namecoin-tx' -o -name 'namecoin-wallet' -o -name 'bitcoin' \) -executable -exec cp {} /output/usr/local/bin/ \; && \
+    find build/bin build/src -maxdepth 1 -type f \( -name 'namecoind' -o -name 'namecoin-cli' -o -name 'namecoin-tx' -o -name 'namecoin-wallet' -o -name 'bitcoin' \) -executable -exec cp {} /output/usr/local/bin/ \; && \
     ls -la /output/usr/local/bin/
 
 # Stage 2: Runtime image
