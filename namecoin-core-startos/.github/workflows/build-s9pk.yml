@@ -36,7 +36,7 @@ jobs:
 
       - name: Build and install start-sdk
         run: |
-          git clone --depth 1 --branch v0.3.5.1 https://github.com/Start9Labs/start-os.git /tmp/start-os
+          git clone --recursive --depth 1 --branch v0.3.5.1 https://github.com/Start9Labs/start-os.git /tmp/start-os
           cd /tmp/start-os/core
           cargo build --release --bin startbox 2>&1 | tail -20
           cp target/release/startbox /usr/local/bin/start-sdk
