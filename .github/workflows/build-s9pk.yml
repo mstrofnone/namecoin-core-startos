@@ -81,12 +81,12 @@ jobs:
       - name: Pack s9pk
         run: |
           if command -v start-sdk &>/dev/null; then
+            start-sdk init 2>/dev/null || true
             start-sdk pack
           else
             echo "start-sdk not available, skipping pack step"
             echo "Docker image built successfully — manual pack needed"
           fi
-        continue-on-error: true
 
       - name: Upload Docker image artifact
         uses: actions/upload-artifact@v4
