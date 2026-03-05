@@ -1,13 +1,10 @@
 # Configuration rules for Namecoin Core
-# These rules enforce logical constraints between config options
+# Rule syntax: StartOS compat bool_expr DSL
 
 # If pruning is enabled, txindex must be disabled
-- rule: |
-    if:
-      pruning.mode:
-        equals: "automatic"
-    then:
-      txindex:
-        equals: false
-        set: false
-        description: "Transaction index cannot be used with pruning enabled"
+- rule: "!( 'pruning.mode = \"automatic\" AND txindex? )"
+  description: "Transaction index cannot be used with pruning enabled. Disable txindex or disable pruning."
+  suggestions:
+    - SET:
+        var: "txindex"
+        to-value: false
