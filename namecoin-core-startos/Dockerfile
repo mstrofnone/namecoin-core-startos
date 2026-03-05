@@ -28,6 +28,12 @@ RUN git clone --depth 1 --branch ${NAMECOIN_VERSION} https://github.com/namecoin
 
 WORKDIR /build/namecoin-core
 
+# Replace upstream Bitcoin DNS seeds with Namecoin-specific seeder
+RUN sed -i '/vSeeds\.emplace_back.*sipa\|vSeeds\.emplace_back.*bluematt\|vSeeds\.emplace_back.*jonasschnelli\|vSeeds\.emplace_back.*petertodd\|vSeeds\.emplace_back.*sprovoost\|vSeeds\.emplace_back.*emzy\|vSeeds\.emplace_back.*wiz\|vSeeds\.emplace_back.*achownodes/d' src/kernel/chainparams.cpp && \
+    sed -i 's|// Note that of those which support the service bits prefix.*|vSeeds.emplace_back("dnsseed.nmc.testls.space."); // Namecoin DNS seeder|' src/kernel/chainparams.cpp && \
+    sed -i '/\/\/ possible options\./d; /\/\/ This is fine at runtime/d; /\/\/ service bits we want/d; /\/\/ release ASAP/d' src/kernel/chainparams.cpp && \
+    grep -n 'vSeeds\|dnsseed' src/kernel/chainparams.cpp
+
 # Build Namecoin Core using CMake (nc30.x dropped autotools)
 RUN cmake -B build \
     -DBUILD_GUI=OFF \
